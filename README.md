@@ -9,7 +9,7 @@
     - [3.2 Off-Policy Sampling](#32-off-policy-sampling)
     - [3.3 Bootstrapping](#33-bootstrapping)
     - [3.4 Recurrent Plolicy](#34-recurrent-plolicy)
-    - [4. Conclusion](#4-conclusion)
+  - [4. Conclusion](#4-conclusion)
 
 ## 1. How to set up the environment?
 * This project is an extension based on [Aravind Rajeswaran's project](https://github.com/aravindr93/hand_dapg). For the detailed setup instructions and dependencies, please refer to his project.
@@ -121,7 +121,7 @@ The experimental results are shown in Fig.7, it can be obviously observed that t
 ![lstm](presentation_report/lstm.png)
 *Fig. 7. Evaluations in experiments on LSTM policy*
 
-### 4. Conclusion
+## 4. Conclusion
 * (Behavior cloning)Pre-training with demonstrations is very helpful for initializing the policy
 * GAE and LSTM policy both help accelerate the learning, and outperform the original DAPG settings in terms of the success rate and total rewards. (Shown in Fig.8)
 * Mixed off-policy sampling's performance is almost the same with the original on-policy DAPG algorithm
