@@ -44,46 +44,39 @@ For our specific application, the detailed definitions for the components in our
 * **Action**: The action is also continuous, represented by a $24$-dimensional vector ($m=24$). Each of the dimensions is defined as the desired angle at the next step for one of the $24$ joints on the robot hand.
 * **Reward**: The reward we use is heavily shaped to help with faster learning. The shaping of the reward is adopted from the default setting of the environment we use. Basically, the reward is a function of the state, mainly related to the difference of current and target pen pose. Additionally, bonus for success and penalty for failure are both applied in shaping the reward. The reward can be explicitly expressed as
 
+$$R_t = R_{diff} + R_{bonus} + R_{penalty}$$
+
 $$
 \begin{aligned}
-    & R_t = R_{diff} + R_{bonus} + R_{penalty}\\
-    & R_{diff} = -||\bm{p}_t - \bm{p}_*||_2 + \langle\bm{\phi}_t, \bm{\phi}_*\rangle\\
-    & R_{bonus} =
-        \begin{cases}
-            +10& \text{if $||\bm{p}_t - \bm{p}_*||_2 < 0.075$}\\
-            &\text{and $\langle\bm{\phi}_t, \bm{\phi}_*\rangle > 0.9$}\\
-            +50& \text{if $||\bm{p}_t - \bm{p}_*||_2 < 0.075$}\\
-            &\text{and $\langle\bm{\phi}_t, \bm{\phi}_*\rangle > 0.95$}\\
-            0& \text{otherwise}
-        \end{cases}\\
-    & R_{penalty} = 
-        \begin{cases}
-            -5& \text{if $\bm{p}_t^{(z)} < 0.075$}\\
-            0& \text{otherwise}
-        \end{cases}
-\end{aligned}
+  R_{diff} = -||p&_t - p_*||_2 + \langle\phi_t, \phi_*\rangle\\R_{bonus} = +10&\quad \text{if} ||p_t - p_*||_2 < 0.075\quad
+              \text{and}\quad \langle\phi_t, \phi_*\rangle > 0.9\\
+              +50&\quad \text{if} ||p_t - p_*||_2 < 0.075\quad
+              \text{and} \quad \langle\phi_t, \phi_*\rangle > 0.95\\
+              0&\quad \text{otherwise}\\
+    R_{penalty} = -5& \quad\text{if}\quad p_t^{(z)} < 0.075\\
+            0& \quad \text{otherwise}
+  \end{aligned}
 $$
-where $p_t$, $\bm{p}_*$, $\bm{\phi}_t$, $\bm{\phi}_*$ respectively denote the current position, target position, current orientation and target orientation of the pen at time $t$; $\bm{p}_t^{(z)}$ is the height of the pen at time $t$; and $\langle\cdot,\cdot\rangle$ denotes the inner product of two given vectors.
+where $p_t$, $p_*$, $\phi_t$, $\phi_*$ respectively denote the current position, target position, current orientation and target orientation of the pen at time $t$; $p_t^{(z)}$ is the height of the pen at time $t$; and $\langle\cdot,\cdot\rangle$ denotes the inner product of two given vectors.
 
 
-<!-- --------------------------Extensions------------------------------------>
 ## 3. Our Extensions
 ### 3.1 DAPG verification
 ![verify](presentation_report/verify.png)
 *Fig. 3. Evaluations in experiments verifying effectiveness of different strategies used in DAPG.*
 
-The DAPG algorithm is derived from the classical REINFORCE with Baseline, which is a Monte-Carlo policy gradient method for optimizing the stochastic policy. It involves one neural network for the value-function baseline $\hat{v}(S, \mathbf{w})$ and another network for the policy $\pi(A|S, \bm{\theta})$. At the beginning of each training iteration, it will first sample a batch of trajectories using current policy, and estimate the advantage $\delta_t$ of each step with the actual return $G_t$ by
+The DAPG algorithm is derived from the classical REINFORCE with Baseline, which is a Monte-Carlo policy gradient method for optimizing the stochastic policy. It involves one neural network for the value-function baseline $\hat{v}(S, \mathbf{w})$ and another network for the policy $\pi(A|S, \theta)$. At the beginning of each training iteration, it will first sample a batch of trajectories using current policy, and estimate the advantage $\delta_t$ of each step with the actual return $G_t$ by
 $$
     \begin{aligned}
         G_t &= \sum_{k=t+1}^T \gamma^{k-t-1} R_k\\
         \delta_t &= G_t - \hat{v}(S_t, \mathbf{w})
     \end{aligned}
 $$
-And then the baseline network weights $\mathbf{w}$ and the policy network weights $\bm{\theta}$ will be successively updated with a small step size $\alpha^{\mathbf{w}}$ and $\alpha^{\bm{\theta}}$ by
+And then the baseline network weights $\mathbf{w}$ and the policy network weights $\theta$ will be successively updated with a small step size $\alpha^{\mathbf{w}}$ and $\alpha^{\theta}$ by
 $$
     \begin{aligned}
         \mathbf{w}_{t+1} &= \mathbf{w}_t +  \alpha^{\mathbf{w}}\delta_t\nabla\hat{v}(S_t, \mathbf{w})\\
-        \bm{\theta}_{t+1} &= \bm{\theta}_t +  \alpha^{\bm{\theta}}\delta_t\nabla \ln \pi(A_t | S_t, \bm{\theta})
+        \theta_{t+1} &= \theta_t +  \alpha^{\theta}\delta_t\nabla \ln \pi(A_t | S_t, \theta)
     \end{aligned}
 $$
 
@@ -92,14 +85,14 @@ For the major contributions of DAPG, it adopts additional training strategies wh
 * Pre-training with behavior cloning. Utilizing an expert demonstration dataset $\mathcal{D}$ which includes $25$ pre-collected trajectories, the policy network will be pre-trained with supervised learning by maximizing the likelihood of actions observed in the demonstration dataset:
 $$
     \begin{aligned}
-        \rm{maximize}_{\bm{\theta}} \quad \sum_{(S, A) \in \mathcal{D}} \ln \pi(A|S, \bm{\theta})
+        \rm{maximize}_{\theta} \quad \sum_{(S, A) \in \mathcal{D}} \ln \pi(A|S, \theta)
     \end{aligned}
 $$
-* Natural policy gradient (NPG). In the fine-tuning phase of the training, instead of using the vanilla REINFORCE gradient $g$ expressed in Eq. 7, it will make a normalized gradient ascent update to the policy pre-conditioned with the Fisher Information Matrix $F_{\bm{\theta}_t}$:
+* Natural policy gradient (NPG). In the fine-tuning phase of the training, instead of using the vanilla REINFORCE gradient $g$ expressed in Eq. 7, it will make a normalized gradient ascent update to the policy pre-conditioned with the Fisher Information Matrix $F_{\theta_t}$:
 $$
     \begin{aligned}
-        g &= \delta_t\nabla \ln \pi(A_t | S_t, \bm{\theta})\\
-        \bm{\theta}_{t+1} &= \bm{\theta}_t +  \sqrt{\frac{\alpha^{\bm{\theta}}}{g^T F_{\bm{\theta}_t}^{-1} g}} F_{\bm{\theta}_t}^{-1} g
+        g &= \delta_t\nabla \ln \pi(A_t | S_t, \theta)\\
+        \theta_{t+1} &= \theta_t +  \sqrt{\frac{\alpha^{\theta}}{g^T F_{\theta_t}^{-1} g}} F_{\theta_t}^{-1} g
     \end{aligned}
 $$
 * Augmented policy gradient from demo data. In fine-tuning, besides using the newly sampled data at each training iteration to compute the policy gradient, DAPG also keeps utilizing the demonstration data to help shape the gradient. Briefly speaking, this is done by merging the gradient computed from the demonstration data into the original gradient computed from the newly sampled data with a small decaying weight. This strategy can elegantly guide the exploration at the early stage of fine-tuning. *This technique is able to better shape the policy gradient and make faster progress on the policy improvement.*
